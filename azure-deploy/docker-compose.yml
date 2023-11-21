@@ -1,0 +1,69 @@
+version: '3.7'
+
+services:
+
+    # MySQL DB
+    db:
+    
+        image: danivwordpressimages.azurecr.io/mysql:8.2.0
+        
+        container_name: mysqldb
+        
+        # Force MySQL use authentication based on the password hashing method
+        # Hide pid in another folder for security reasons
+        command: ["--default-authentication-plugin=caching_sha2_password", "--pid-file=/hidden/services/mysqld.pid"]
+        
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: wordpress
+            MYSQL_USER: user
+            MYSQL_PASSWORD: root
+            MYSQL_INITDB_SKIP_TZINFO: 1
+            
+        expose:
+            - "3306"
+            
+        restart: always
+        
+        volumes:
+            - mysqldata:/var/lib/mysql
+            
+        networks:
+            - wordpressnet
+
+
+    # WordPress
+    wordpress:
+    
+        image: danivwordpressimages.azurecr.io/wordpress:8.2
+        
+        container_name: wordpress
+        
+        depends_on:
+            - db
+            
+        environment:
+            WORDPRESS_DB_USER: user
+            WORDPRESS_DB_PASSWORD: root
+            WORDPRESS_DB_NAME: wordpress
+            WORDPRESS_DB_HOST: db
+            
+        ports:
+            - "80:80"
+            
+        restart: unless-stopped
+        
+        volumes:
+            - wordpressdata:/var/www/html
+            
+        networks:
+            - wordpressnet
+
+# Networks
+networks:
+    wordpressnet:
+
+# Persistency
+volumes:
+    mysqldata:
+    wordpressdata:
